@@ -1,9 +1,15 @@
 """
-stft_demo.py -- STFT 分帧验证：对 chirp 信号做 STFT，打印时间-频率矩阵
-对应周报章节：语音信号的时频分析基础
+stft_demo.py -- 离散 STFT 分帧验证：对线性 chirp 信号做 STFT
+对应周报章节：语音信号的时频分析基础（M-02）
 """
 
 import numpy as np
+
+
+def linear_chirp(t, f0, f1, duration):
+    sweep_rate = (f1 - f0) / duration
+    phase = 2 * np.pi * (f0 * t + 0.5 * sweep_rate * t ** 2)
+    return np.sin(phase)
 
 
 def main():
@@ -12,8 +18,7 @@ def main():
     t = np.arange(int(fs * duration)) / fs
 
     f0, f1 = 50, 400
-    freq = f0 + (f1 - f0) * t / duration
-    x = np.sin(2 * np.pi * freq * t)
+    x = linear_chirp(t, f0, f1, duration)
 
     frame_len = 128
     hop = 64
@@ -24,14 +29,14 @@ def main():
     for i in range(n_frames):
         start = i * hop
         frame = x[start:start + frame_len] * window
-        X = np.fft.fft(frame)
-        stft_matrix.append(np.abs(X)[:frame_len // 2])
+        X = np.fft.rfft(frame)
+        stft_matrix.append(np.abs(X))
 
     stft_matrix = np.array(stft_matrix)
-    freq_axis = np.fft.fftfreq(frame_len, d=1.0 / fs)[:frame_len // 2]
+    freq_axis = np.fft.rfftfreq(frame_len, d=1.0 / fs)
 
-    print(f"Chirp signal: {f0} Hz -> {f1} Hz, duration {duration}s")
-    print(f"Frame length: {frame_len}, hop: {hop}, Hann window")
+    print(f"Linear chirp: {f0} Hz -> {f1} Hz, duration {duration}s")
+    print(f"Discrete STFT uses frame length N={frame_len}, hop H={hop}, Hann window")
     print(f"STFT matrix shape: (n_frames={stft_matrix.shape[0]}, n_freq_bins={stft_matrix.shape[1]})")
     print(f"Frequency resolution: {freq_axis[1] - freq_axis[0]:.2f} Hz")
     print(f"Time resolution per frame: {hop / fs * 1000:.1f} ms\n")

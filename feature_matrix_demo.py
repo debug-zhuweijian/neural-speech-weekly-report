@@ -1,6 +1,6 @@
 """
 feature_matrix_demo.py -- 特征矩阵构建验证：模拟完整的预处理链路输出
-对应周报章节：神经信号预处理与特征工程
+对应周报章节：神经信号预处理与特征工程（M-05, M-08）
 """
 
 import numpy as np
@@ -11,6 +11,7 @@ def main():
     fs = 1000
     duration = 2.0
     C = 8
+    eps = 1e-8
     t = np.arange(int(fs * duration)) / fs
 
     signals = np.zeros((C, len(t)))
@@ -42,7 +43,7 @@ def main():
     baseline = feature_matrix[:10]
     mu = baseline.mean(axis=0, keepdims=True)
     sigma = baseline.std(axis=0, keepdims=True)
-    feature_matrix = (feature_matrix - mu) / sigma
+    feature_matrix = (feature_matrix - mu) / (sigma + eps)
 
     print(f"Simulated {C} channels, {fs} Hz, {duration}s")
     print(f"Downsample step: {step_ms} ms (hop={hop} samples)")
@@ -51,9 +52,13 @@ def main():
     for f in range(5):
         print(f"  t={f * step_ms:>3}ms: {feature_matrix[f, :4].round(3).tolist()}")
 
-    print(f"\nMatrix statistics:")
-    print(f"  Mean: {feature_matrix.mean():.6f} (expect ~0 after Z-score)")
-    print(f"  Std:  {feature_matrix.std():.6f} (expect ~1 after Z-score)")
+    baseline_z = feature_matrix[:10]
+    print(f"\nMatrix statistics (epsilon={eps:.0e} in Z-score):")
+    print(f"  Baseline mean: {baseline_z.mean():.6f} (expect ~0)")
+    print(f"  Baseline std:  {baseline_z.std():.6f} (expect ~1)")
+    print(f"  Global mean:   {feature_matrix.mean():.6f}")
+    print(f"  Global std:    {feature_matrix.std():.6f}")
+    print("  Note: only the baseline window is forced to zero-mean/unit-std, not the full sequence.")
     print(f"\nThis T x C matrix is the direct input to sequence models (LSTM, CNN, etc.).")
 
 

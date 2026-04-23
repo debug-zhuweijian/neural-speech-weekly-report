@@ -1,6 +1,6 @@
 """
-ctc_alignment.py -- CTC 路径枚举 + collapse + 概率求和验证
-对应周报章节：时序对齐问题的进一步理解
+ctc_alignment.py -- CTC 路径枚举 + collapse + 边际概率求和验证
+对应周报章节：时序对齐问题的进一步理解（补充公式 A-03）
 """
 
 import itertools
@@ -16,6 +16,13 @@ def collapse(path):
     return "".join(p for p in merged if p != "-")
 
 
+def path_probability(path, probs):
+    prob = 1.0
+    for t, s in enumerate(path):
+        prob *= probs[t][s]
+    return prob
+
+
 def main():
     labels = ["-", "A", "B"]
     probs = [
@@ -25,7 +32,8 @@ def main():
     ]
     T = len(probs)
 
-    print(f"CTC alignment enumeration")
+    print("CTC alignment enumeration")
+    print("Objective: P(y|x) = sum_{pi in B^-1(y)} prod_t P(pi_t|x_t)")
     print(f"Vocabulary: {labels}")
     print(f"Timesteps: {T}")
     print(f"Target: 'A'\n")
@@ -33,13 +41,11 @@ def main():
     all_paths = list(itertools.product(labels, repeat=T))
     print(f"Total possible paths: {len(all_paths)}\n")
 
-    print(f"All paths with collapse result and probability:")
-    print(f"  {'Path':>15}  {'Collapsed':>10}  {'Prob':>10}")
+    print("All paths with collapse result and probability:")
+    print(f"  {'Path':>15}  {'B(path)':>10}  {'P(path)':>10}")
     path_data = []
     for path in all_paths:
-        p = 1.0
-        for t, s in enumerate(path):
-            p *= probs[t][s]
+        p = path_probability(path, probs)
         collapsed = collapse(path)
         path_data.append((path, collapsed, p))
         print(f"  {str(path):>15}  {collapsed:>10}  {p:>10.6f}")

@@ -1,6 +1,6 @@
 """
 dilated_causal_conv.py -- 膨胀因果卷积与感受野验证
-对应周报章节：序列建模与卷积基础
+对应周报章节：序列建模与卷积基础（补充公式 A-05）
 """
 
 import numpy as np
@@ -21,11 +21,8 @@ def dilated_causal_conv1d(x, kernel, dilation=1):
     return out
 
 
-def receptive_field(layers, kernel_size):
-    rf = 1
-    for l in range(layers):
-        rf += (kernel_size - 1) * (2 ** l)
-    return rf
+def receptive_field(kernel_size, dilations):
+    return 1 + (kernel_size - 1) * sum(dilations)
 
 
 def main():
@@ -34,23 +31,27 @@ def main():
     x[0] = 1.0
 
     kernel = np.array([0.5, 1.0, 0.5])
+    dilations = [1, 2, 4, 8]
 
     print("Dilated causal convolution: stacking layers with doubling dilation")
     print(f"Kernel size: {len(kernel)}, Input length: {T}\n")
 
     current = x.copy()
-    for layer, dilation in enumerate([1, 2, 4, 8]):
+    for layer, dilation in enumerate(dilations):
         current = dilated_causal_conv1d(current, kernel, dilation=dilation)
         nonzero = np.where(np.abs(current) > 1e-10)[0]
         rf = nonzero[-1] - nonzero[0] + 1 if len(nonzero) > 0 else 0
         print(f"Layer {layer + 1} (dilation={dilation:>2}): non-zero range = [{nonzero[0]}..{nonzero[-1]}], effective RF = {rf}")
 
-    print(f"\nReceptive field formula: RF = 1 + (k-1) * sum(2^i, i=0..L-1)")
+    print("\nGeneral receptive field formula:")
+    print("  RF = 1 + (k-1) * sum(d_l)")
     for L in [3, 5, 10]:
-        rf = receptive_field(L, len(kernel))
+        rf = receptive_field(len(kernel), [2 ** i for i in range(L)])
         print(f"  L={L:>2}, k={len(kernel)} => RF = {rf}")
 
-    print(f"\nWith L=10, k=3: RF = {receptive_field(10, 3)} (covers {receptive_field(10, 3)} timesteps)")
+    rf_10 = receptive_field(3, [2 ** i for i in range(10)])
+    print(f"\nSpecial case: k=3 and d_l = 2^l")
+    print(f"  RF = 1 + 2*(2^L - 1), so L=10 gives RF = {rf_10}")
     print("=> Efficient long-range dependency without parameter explosion.")
 
 

@@ -1,6 +1,6 @@
 """
 bandpass_filter.py -- 带通滤波验证：提取 70-150 Hz 高伽马频段
-对应周报章节：神经信号预处理与特征工程
+对应周报章节：神经信号预处理与特征工程（M-07 的数字实现）
 """
 
 import numpy as np
@@ -9,8 +9,14 @@ import numpy as np
 def butter_bandpass(x, lowcut, highcut, fs, order=4):
     from scipy.signal import butter, filtfilt
     nyq = 0.5 * fs
-    b, a = butter(order, [lowcut / nyq, highcut / nyq], btype='band')
+    b, a = butter(order, [lowcut / nyq, highcut / nyq], btype="band")
     return filtfilt(b, a, x)
+
+
+def one_sided_magnitude(x, fs):
+    X = np.fft.rfft(x)
+    freqs = np.fft.rfftfreq(len(x), d=1.0 / fs)
+    return freqs, np.abs(X)
 
 
 def main():
@@ -24,19 +30,17 @@ def main():
     x = signal_hga + signal_low + signal_high
 
     print(f"Mixed signal: 100 Hz (HGA) + 10 Hz (low drift) + 300 Hz (high noise)")
-    print(f"Bandpass: 70-150 Hz, order=4, fs={fs} Hz\n")
+    print(f"Bandpass: 70-150 Hz, order=4, fs={fs} Hz")
+    print("Implementation: digital Butterworth bandpass + filtfilt (zero phase)\n")
 
-    X = np.fft.fft(x)
-    freqs = np.fft.fftfreq(len(x), d=1.0 / fs)[:len(x) // 2]
-    mag_before = np.abs(X)[:len(x) // 2]
+    freqs, mag_before = one_sided_magnitude(x, fs)
 
     for f in [10, 100, 300]:
         idx = np.argmin(np.abs(freqs - f))
         print(f"Before filter: |X({f}Hz)| = {mag_before[idx]:.2f}")
 
     y = butter_bandpass(x, 70, 150, fs, order=4)
-    Y = np.fft.fft(y)
-    mag_after = np.abs(Y)[:len(y) // 2]
+    _, mag_after = one_sided_magnitude(y, fs)
 
     print()
     for f in [10, 100, 300]:

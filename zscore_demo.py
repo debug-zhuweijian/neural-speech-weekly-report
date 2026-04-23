@@ -1,6 +1,6 @@
 """
 zscore_demo.py -- Z-score 标准化验证：统一多通道信号标尺
-对应周报章节：神经信号预处理与特征工程
+对应周报章节：神经信号预处理与特征工程（M-08）
 """
 
 import numpy as np
@@ -11,6 +11,7 @@ def main():
     C = 3
     T = 500
     baseline_len = 100
+    eps = 1e-8
 
     channels = np.zeros((C, T))
     channels[0] = np.random.randn(T) * 0.5 + 10
@@ -27,9 +28,9 @@ def main():
 
     mu = channels[:, :baseline_len].mean(axis=1, keepdims=True)
     sigma = channels[:, :baseline_len].std(axis=1, keepdims=True)
-    z = (channels - mu) / sigma
+    z = (channels - mu) / (sigma + eps)
 
-    print("\nChannel statistics after Z-score (baseline period):")
+    print(f"\nChannel statistics after Z-score (baseline period, epsilon={eps:.0e}):")
     for i in range(C):
         bl = z[i, :baseline_len]
         print(f"  Channel {i}: mean={bl.mean():.6f}, std={bl.std():.6f}")

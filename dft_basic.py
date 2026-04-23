@@ -1,9 +1,23 @@
 """
-dft_basic.py -- DFT 频谱验证：对混合正弦信号做 DFT，打印频谱幅度
-对应周报章节：语音信号的时频分析基础
+dft_basic.py -- DFT 频谱验证：输出单边幅度谱与周期图
+对应周报章节：语音信号的时频分析基础（M-01 的离散实现）
 """
 
 import numpy as np
+
+
+def one_sided_spectrum(x, fs):
+    n = len(x)
+    X = np.fft.rfft(x)
+    freqs = np.fft.rfftfreq(n, d=1.0 / fs)
+
+    amplitude = 2.0 * np.abs(X) / n
+    amplitude[0] /= 2.0
+    if n % 2 == 0:
+        amplitude[-1] /= 2.0
+
+    periodogram = (np.abs(X) ** 2) / n
+    return freqs, amplitude, periodogram
 
 
 def main():
@@ -12,28 +26,28 @@ def main():
     n = np.arange(N)
     x = 1.0 * np.sin(2 * np.pi * 32 * n / fs) + 0.5 * np.sin(2 * np.pi * 64 * n / fs)
 
-    X = np.fft.fft(x)
-    mag = np.abs(X)[:N // 2]
-    freqs = np.fft.fftfreq(N, d=1.0 / fs)[:N // 2]
+    freqs, amplitude, periodogram = one_sided_spectrum(x, fs)
 
     top_k = 5
-    idx = np.argsort(mag)[::-1][:top_k]
+    idx = np.argsort(amplitude)[::-1][:top_k]
     print("Input signal: 1.0*sin(2pi*32Hz) + 0.5*sin(2pi*64Hz)")
     print(f"Sample rate: {fs} Hz, N: {N} points")
-    print(f"\nTop {top_k} frequency components:")
+    print("\nOne-sided amplitude spectrum (amplitude should match sinusoid coefficients):")
     for i in idx:
-        print(f"  freq = {freqs[i]:>6.1f} Hz, magnitude = {mag[i]:.6f}")
+        print(f"  freq = {freqs[i]:>6.1f} Hz, amplitude = {amplitude[i]:.6f}")
 
-    peak1 = freqs[np.argmax(mag)]
+    peak1 = freqs[np.argmax(amplitude)]
     print(f"\nStrongest component: {peak1:.1f} Hz (expected 32.0 Hz)")
 
-    mag_64 = mag[np.argmin(np.abs(freqs - 64.0))]
-    mag_32 = mag[np.argmax(mag)]
-    print(f"Ratio 32Hz/64Hz magnitude: {mag_32 / mag_64:.2f} (expected ~2.00)")
+    amp_32 = amplitude[np.argmin(np.abs(freqs - 32.0))]
+    amp_64 = amplitude[np.argmin(np.abs(freqs - 64.0))]
+    print(f"Recovered amplitude at 32Hz: {amp_32:.2f} (expected 1.00)")
+    print(f"Recovered amplitude at 64Hz: {amp_64:.2f} (expected 0.50)")
+    print(f"Ratio 32Hz/64Hz amplitude: {amp_32 / amp_64:.2f} (expected 2.00)")
 
-    P = np.abs(X) ** 2
-    print(f"\nPower spectrum at 32Hz: {P[np.argmax(mag)]:.2f}")
-    print(f"Power spectrum at 64Hz: {P[np.argmin(np.abs(freqs - 64.0))]:.2f}")
+    print("\nPeriodogram P[k] = |X[k]|^2 / N:")
+    print(f"  P(32Hz) = {periodogram[np.argmin(np.abs(freqs - 32.0))]:.2f}")
+    print(f"  P(64Hz) = {periodogram[np.argmin(np.abs(freqs - 64.0))]:.2f}")
 
 
 if __name__ == "__main__":
